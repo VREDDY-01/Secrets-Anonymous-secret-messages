@@ -29,8 +29,42 @@ app.get("/register",(req,res)=>{
 });
 
 app.get("/login",(req,res)=>{
-    res.render("login")
+    res.render("login");
 });
+
+app.post("/register",(req,res)=>{
+    const newUser = new User({
+        email:req.body.username,
+        password:req.body.password
+    });
+
+    newUser.save((err)=>{
+        if(!err){
+            res.render("secrets");
+        }else{
+            console.log(err);
+        }
+    })
+});
+
+app.post("/login", function(req, res){
+    const username = req.body.username;
+    const password = req.body.password;
+  
+    User.findOne({email: username}, function(err, foundUser){
+      if (err) {
+        res.render("nouser");
+      } else {
+        if (foundUser) {
+          if (foundUser.password === password) {
+            res.render("secrets");
+          }
+        }else{
+            res.render("nouser");
+        }
+      }
+    });
+  });
 
 app.listen(3000,()=>{
     console.log("Server has started at port 3000");
