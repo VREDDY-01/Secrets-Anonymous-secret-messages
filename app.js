@@ -36,7 +36,9 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
-  secret:Array
+  secret:Array,
+  photo:String,
+  name:String
 });
 
 //Plugins
@@ -54,8 +56,8 @@ passport.serializeUser(function (user, cb) {
   process.nextTick(function () {
     return cb(null, {
       id: user.id,
-      username: user.username,
-      picture: user.picture,
+      username: user.name,
+      picture: user.photo,
     });
   });
 });
@@ -75,7 +77,11 @@ passport.use(
       callbackURL: process.env.G_CALLBACK_URL,
     },
     function (accessToken, refreshToken, profile, cb) {
-      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+      User.findOrCreate({ 
+        googleId: profile.id, 
+        photo: profile.photos[0].value,
+        name:profile.displayName 
+      }, function (err, user) {
         return cb(err, user);
       });
     }
@@ -104,12 +110,13 @@ app.get("/register", (req, res) => {
 
 app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) {
+    console.log(req.user);
     User.find({"secret": {$ne: null}}, (err, foundUsers)=>{
       if(err){
         console.log(err);
       }else{
         if(foundUsers){
-          res.render("secrets", {MySecrets: foundUsers});
+          res.render("secrets", {MySecrets: foundUsers, profileImage: req.user.picture, profileName: req.user.username});
         }
       }
     });

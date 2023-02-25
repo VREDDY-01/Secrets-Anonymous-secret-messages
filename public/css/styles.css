@@ -25,7 +25,15 @@ body {
   justify-content: space-between;
 }
 
-.profile-photo{
-  width: 32px;
-  height: 32px;
+.profileImage{
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.profile{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
