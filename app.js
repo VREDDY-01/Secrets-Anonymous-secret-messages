@@ -9,8 +9,10 @@ const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const findOrCreate = require("mongoose-findorcreate");
 
+//Calling Express.
 const app = express();
 
+//Using and setting required fields.
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -25,22 +27,29 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+//Starting and connecting to database Server.
 mongoose.set("strictQuery", false);
 mongoose.connect("mongodb://127.0.0.1:27017/userDB");
 
+//Schema Design for database
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
+  secret:Array
 });
 
+//Plugins
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
 
+//Creation Of user model
 const User = new mongoose.model("users", userSchema);
 
+//Creating a local strategy for user.
 passport.use(User.createStrategy());
 
+//serializing and deserializing the user
 passport.serializeUser(function (user, cb) {
   process.nextTick(function () {
     return cb(null, {
@@ -57,6 +66,7 @@ passport.deserializeUser(function (user, cb) {
   });
 });
 
+//Creating a strategy for authentication for using google.
 passport.use(
   new GoogleStrategy(
     {
@@ -72,20 +82,18 @@ passport.use(
   )
 );
 
+//GET REQUESTS--------------------------------------------------------------------------------------------
 app.get("/", (req, res) => {
   res.render("home");
 });
 
-app.get(
-  "/auth/google",
+app.get("/auth/google",
   passport.authenticate("google", { scope: ["profile"] })
 );
 
-app.get(
-  "/auth/google/secrets",
+app.get("/auth/google/secrets",
   passport.authenticate("google", { failureRedirect: "/login" }),
   function (req, res) {
-    // Successful authentication, redirect to secrets.
     res.redirect("/secrets");
   }
 );
@@ -96,7 +104,15 @@ app.get("/register", (req, res) => {
 
 app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    User.find({"secret": {$ne: null}}, (err, foundUsers)=>{
+      if(err){
+        console.log(err);
+      }else{
+        if(foundUsers){
+          res.render("secrets", {MySecrets: foundUsers});
+        }
+      }
+    });
   } else {
     res.redirect("/login");
   }
@@ -116,6 +132,16 @@ app.get("/logout", (req, res) => {
   });
 });
 
+app.get("/submit",(req,res)=>{
+  if(req.isAuthenticated()){
+    res.render("submit");
+  }else{
+    res.redirect("/login");
+  }
+})
+
+
+//POST Requests----------------------------------------------------------------------------------------
 app.post("/register", (req, res) => {
   User.register(
     { username: req.body.username },
@@ -151,6 +177,26 @@ app.post("/login", function (req, res) {
   });
 });
 
+app.post("/submit",(req,res)=>{
+  const secret = req.body.secret;
+
+  User.findById(req.user.id, (err,foundUser)=>{
+    if(err){
+      console.log(err);
+      res.redirect("/secrets");
+    }else{
+      if(foundUser){
+        foundUser.secret.push(secret);
+        foundUser.save(()=>{
+          res.redirect("/secrets");
+        });
+      }
+    }
+  })
+})
+
+
+//Starting the server
 app.listen(3000, () => {
   console.log("Server has started at port 3000");
 });
