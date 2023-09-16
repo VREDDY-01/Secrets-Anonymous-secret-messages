@@ -110,6 +110,7 @@ app.get("/register", (req, res) => {
 
 app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) {
+    console.log(req.user);
     User.find({"secret": {$ne: null}}, (err, foundUsers)=>{
       if(err){
         console.log(err);
