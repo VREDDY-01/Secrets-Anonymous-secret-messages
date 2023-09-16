@@ -29,7 +29,7 @@ app.use(passport.session());
 
 //Starting and connecting to database Server.
 mongoose.set("strictQuery", false);
-mongoose.connect("mongodb://127.0.0.1:27017/userDB");
+mongoose.connect(process.env.MONGO_URI);
 
 //Schema Design for database
 const userSchema = new mongoose.Schema({
@@ -110,7 +110,6 @@ app.get("/register", (req, res) => {
 
 app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) {
-    console.log(req.user);
     User.find({"secret": {$ne: null}}, (err, foundUsers)=>{
       if(err){
         console.log(err);
